@@ -609,7 +609,7 @@ function chessDeskCellClick(event){
 
 globalThis.playerDesk = new PlayerDesk("chessTable");
 globalThis.playerDesk.chessDesk.currentPlayer = FigureColor.white;
-
+ alert(hello);
 // function showGeoLoc(position){
 //     let a = position.coords;
 //     debugger;
