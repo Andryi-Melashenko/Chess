@@ -58,6 +58,27 @@ class Bishop extends Figure{
             p.style('fill:none; stroke:#000000; stroke-linejoin:miter;');
         }
     }
+    checkMove(rowPos,columnPos,rowDestination,columnDestination,color=globalThis.playerDesk.chessDesk.currentPlayer){
+        let chessDesk = globalThis.playerDesk.chessDesk;
+        if (this.color != color) return MoveState.cannot;
+        if (rowPos == rowDestination && columnPos == columnDestination) return MoveState.cannot;
+        if (Math.abs(rowPos - rowDestination) !== Math.abs(columnPos - columnDestination))return MoveState.cannot;
+        let idxRow = Math.sign(rowDestination - rowPos);
+        let idxColumn = Math.sign(columnDestination - columnPos);
+
+        for(let i = rowPos + idxRow, j = columnPos + idxColumn; i!=rowDestination && j != columnDestination; i+= idxRow, j+=idxColumn){
+            let roadCell = chessDesk.getCell(i,j);
+            if(roadCell.figure != undefined)return MoveState.cannot;
+        }
+        let targetCell = chessDesk.getCell(rowDestination, columnDestination);
+        if(targetCell.figure == undefined)return MoveState.can;
+        if(targetCell.figure.color === this.color){
+            return MoveState.cannot;
+        }
+        else{
+            return MoveState.fight;
+        }
+    }
 
 }
 class Horse extends Figure {
@@ -89,7 +110,16 @@ class Horse extends Figure {
             p.style('fill:#000000; stroke:#000000;');
         }
     }
-
+    checkMove(rowPos,columnPos,rowDestination,columnDestination,color=globalThis.playerDesk.chessDesk.currentPlayer){
+        let chessDesk = globalThis.playerDesk.chessDesk;
+        if (this.color != color) return MoveState.cannot;
+        if((Math.abs(rowPos - rowDestination) == 2)&& (Math.abs(columnPos - columnDestination) == 1)||
+        (Math.abs(rowPos - rowDestination) == 1)&& (Math.abs(columnPos - columnDestination) == 2)){
+            let targetCell = chessDesk.getCell(rowDestination, columnDestination);
+            if(targetCell.figure !== undefined) return (targetCell.figure.color === this.color? MoveState.cannot:MoveState.fight)
+            return MoveState.can;
+        }
+    }
 
 }
 class King extends Figure{
@@ -131,7 +161,17 @@ class King extends Figure{
 
         }
     }
-
+    checkMove(rowPos,columnPos,rowDestination,columnDestination,color=globalThis.playerDesk.chessDesk.currentPlayer){
+        let chessDesk = globalThis.playerDesk.chessDesk;
+        // other color
+        if (this.color != color) return MoveState.cannot;
+        if (rowPos == rowDestination && columnPos == columnDestination) return MoveState.cannot;
+        if((Math.abs(rowPos - rowDestination) <= 1)&& (Math.abs(columnPos - columnDestination) <= 1)){
+            let targetCell = chessDesk.getCell(rowDestination, columnDestination);
+            if(targetCell.figure !== undefined) return (targetCell.figure.color === this.color? MoveState.cannot:MoveState.fight)
+            return MoveState.can;
+        }
+    }
 }
 class Pawn extends Figure {
     constructor(color){
@@ -150,16 +190,11 @@ class Pawn extends Figure {
     }
     checkMove(rowPos,columnPos,rowDestination,columnDestination,color=globalThis.playerDesk.chessDesk.currentPlayer){
         let chessDesk = globalThis.playerDesk.chessDesk;
-        // other color
         if (this.color != color) return MoveState.cannot;
-
-        // self coords
         if (rowPos == rowDestination && columnPos == columnDestination) return MoveState.cannot;
-        // index for direction
         let idx = this.direction;
         let targetCell = chessDesk.getCell(rowDestination,columnDestination);
         if (rowDestination == rowPos + idx){
-            // try fight
             if (columnDestination == columnPos+1 || columnDestination == columnPos-1){
                 if (targetCell.figure != undefined){
                     if (targetCell.figure.color != this.color){
@@ -198,26 +233,40 @@ class Queen extends Figure {
     }
     checkMove(rowPos,columnPos,rowDestination,columnDestination,color=globalThis.playerDesk.chessDesk.currentPlayer){
         let chessDesk = globalThis.playerDesk.chessDesk;
-        // other color
         if (this.color != color) return MoveState.cannot;
-        // self coords
         if (rowPos == rowDestination && columnPos == columnDestination) return MoveState.cannot;
-        if (Math.abs(rowPos - rowDestination) !== Math.abs(columnPos - columnDestination))return MoveState.cannot;
-        
-        let idxRow = Math.sign(rowDestination - rowPos);
-        let idxColumn = Math.sign(columnDestination - columnPos);
-
-        for(let i = rowPos + idxRow, j = columnPos + idxColumn; i!=rowDestination && j != columnDestination; i+= idxRow, j+=idxColumn){
-            let roadCell = chessDesk.getCell(i,j);
-            if(roadCell.figure != undefined)return MoveState.cannot;
-        }
-        let targetCell = chessDesk.getCell(rowDestination, columnDestination);
-        if(targetCell.figure == undefined)return MoveState.can;
-        if(targetCell.figure.color === this.color){
-            return MoveState.cannot
+        if((Math.abs(rowPos - rowDestination) == 0)&& (Math.abs(columnPos - columnDestination) >= 1)||
+        (((Math.abs(rowPos - rowDestination) >= 1)&& (Math.abs(columnPos - columnDestination) == 0)))){
+            let y = Math.sign(rowDestination - rowPos), x = Math.sign(columnDestination - columnPos);
+            for(let y1 = rowPos + y, x1 = columnPos + x; y1!=rowDestination || x1!=columnDestination; x1 +=x, y1 +=y)
+            {
+                let d = chessDesk.getCell(y1, x1);
+                if( d.figure != undefined)return MoveState.cannot;
+            }
+            let targetCell = chessDesk.getCell(rowDestination, columnDestination);
+            if(targetCell.figure !== undefined){
+                return (targetCell.figure.color === this.color?MoveState.cannot: MoveState.fight)
+            }
+            return MoveState.can;
         }
         else{
-            return MoveState.fight
+
+            if (Math.abs(rowPos - rowDestination) !== Math.abs(columnPos - columnDestination))return MoveState.cannot;
+            let idxRow = Math.sign(rowDestination - rowPos);
+            let idxColumn = Math.sign(columnDestination - columnPos);
+            
+            for(let i = rowPos + idxRow, j = columnPos + idxColumn; i!=rowDestination && j != columnDestination; i+= idxRow, j+=idxColumn){
+                let roadCell = chessDesk.getCell(i,j);
+                if(roadCell.figure != undefined)return MoveState.cannot;
+            }
+            let targetCell = chessDesk.getCell(rowDestination, columnDestination);
+            if(targetCell.figure == undefined)return MoveState.can;
+            if(targetCell.figure.color === this.color){
+                return MoveState.cannot;
+            }
+            else{
+                return MoveState.fight;
+            }
         }
     }
 
@@ -313,6 +362,25 @@ class Rook extends Figure {
             p = draw.path("M 11,14 L 34,14");
             p.style("fill:none; stroke:#000000; stroke-linejoin:miter;");
            }
+    }
+    checkMove(rowPos,columnPos,rowDestination,columnDestination,color=globalThis.playerDesk.chessDesk.currentPlayer){
+        let chessDesk = globalThis.playerDesk.chessDesk;
+        if (this.color != color) return MoveState.cannot;
+        if (rowPos == rowDestination && columnPos == columnDestination) return MoveState.cannot;
+        if((Math.abs(rowPos - rowDestination) == 0)&& (Math.abs(columnPos - columnDestination) >= 1)||
+        (((Math.abs(rowPos - rowDestination) >= 1)&& (Math.abs(columnPos - columnDestination) == 0)))){
+            let y = Math.sign(rowDestination - rowPos), x = Math.sign(columnDestination - columnPos);
+            for(let y1 = rowPos + y, x1 = columnPos + x; y1!=rowDestination || x1!=columnDestination; x1 +=x, y1 +=y)
+            {
+                let d = chessDesk.getCell(y1, x1);
+                if( d.figure != undefined)return MoveState.cannot;
+            }
+            let targetCell = chessDesk.getCell(rowDestination, columnDestination);
+            if(targetCell.figure !== undefined){
+                return (targetCell.figure.color === this.color?MoveState.cannot: MoveState.fight)
+            }
+            return MoveState.can;
+        }
     }
 }
 
@@ -609,7 +677,6 @@ function chessDeskCellClick(event){
 
 globalThis.playerDesk = new PlayerDesk("chessTable");
 globalThis.playerDesk.chessDesk.currentPlayer = FigureColor.white;
- alert(hello);
 // function showGeoLoc(position){
 //     let a = position.coords;
 //     debugger;
